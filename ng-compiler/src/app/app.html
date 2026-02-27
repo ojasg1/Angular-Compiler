@@ -1,0 +1,392 @@
+<!-- Loading Overlay -->
+<app-loading-overlay [stage]="webContainer.stage()" />
+
+<!-- Confirmation Dialog (replaces browser confirm()) -->
+@if (confirmDialog(); as dialog) {
+  <div class="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="confirmTitle"
+       (keydown.escape)="cancelConfirm()">
+    <div class="confirm-card card shadow-lg">
+      <div class="card-body p-4 text-center">
+        <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 2.5rem;" aria-hidden="true"></i>
+        <h5 id="confirmTitle" class="mt-3">Confirm Action</h5>
+        <p class="text-muted">{{ dialog.message }}</p>
+        <div class="d-flex justify-content-center gap-2 mt-3">
+          <button class="btn btn-outline-secondary" (click)="cancelConfirm()" #cancelBtn>Cancel</button>
+          <button class="btn btn-primary" (click)="confirmAction()">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Candidate Authentication (shown when no problem is loaded) -->
+@if (!assessment.currentProblem() && webContainer.stage() === 'idle') {
+  <div class="problem-selector d-flex align-items-center justify-content-center vh-100">
+    <main class="problem-card" style="max-width: 480px; width: 92%;">
+      <!-- Brand header -->
+      <div class="problem-card-header">
+        <div class="d-flex align-items-center justify-content-center flex-column gap-2">
+          <span class="brand-text-landing">iMocha</span>
+          <small style="opacity: 0.85; font-size: 13px;">Skill Assessment</small>
+        </div>
+      </div>
+
+      <div class="problem-card-body" style="padding: 24px;">
+        <p class="auth-intro">Please enter your details to begin the assessment.</p>
+
+        <div class="auth-field">
+          <label for="candidateName">Candidate Name</label>
+          <input id="candidateName" type="text" placeholder="Enter your full name"
+                 [value]="candidateName()"
+                 (input)="candidateName.set($any($event.target).value)"
+                 [disabled]="isLoading()" />
+        </div>
+
+        <div class="auth-field">
+          <label for="candidateEmail">Email Address</label>
+          <input id="candidateEmail" type="email" placeholder="Enter your email"
+                 [value]="candidateEmail()"
+                 (input)="candidateEmail.set($any($event.target).value)"
+                 [disabled]="isLoading()" />
+        </div>
+
+        <label class="auth-checkbox">
+          <input type="checkbox"
+                 [checked]="privacyConsent()"
+                 (change)="privacyConsent.set($any($event.target).checked)"
+                 [disabled]="isLoading()" />
+          <span>I agree to the processing of my personal data (name, email, image and voice) for the purpose of conducting the assessment. <a href="#" class="privacy-link">Read privacy policy</a> to know more.</span>
+        </label>
+
+        <button class="auth-btn"
+                (click)="authenticate()"
+                [disabled]="!canAuthenticate() || isLoading()">
+          @if (isLoading()) {
+            <span class="spinner-border spinner-border-sm me-2" style="width: 14px; height: 14px;"></span>
+            Starting...
+          } @else {
+            Authenticate & Start
+          }
+        </button>
+      </div>
+
+      @if (errorMessage()) {
+        <div class="p-3 pt-0">
+          <div class="alert alert-danger mb-0" role="alert" aria-live="polite">
+            <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>
+            {{ errorMessage() }}
+          </div>
+        </div>
+      }
+
+    </main>
+  </div>
+}
+
+<!-- Submission Result -->
+@if (assessment.isSubmitted()) {
+  <div class="submission-overlay" role="dialog" aria-modal="true" aria-labelledby="submissionTitle"
+       (keydown.escape)="backToProblems()">
+    <div class="submission-card">
+      @if (assessment.finalScore(); as score) {
+        <!-- Hero section -->
+        <div class="submission-hero"
+             [class.hero-perfect]="score.passed === score.total && score.total > 0"
+             [class.hero-partial]="score.failed > 0 && score.passed > 0"
+             [class.hero-zero]="score.passed === 0 && score.total > 0">
+          @if (score.passed === score.total && score.total > 0) {
+            <i class="bi bi-trophy-fill" style="font-size: 3rem;" aria-hidden="true"></i>
+          } @else {
+            <i class="bi bi-check-circle-fill" style="font-size: 3rem;" aria-hidden="true"></i>
+          }
+          <h2 class="mt-2 mb-1" id="submissionTitle">Assessment Submitted!</h2>
+          <div class="submission-score-big">
+            {{ score.passed }}/{{ score.total }} passed
+          </div>
+        </div>
+
+        <div class="submission-body">
+          <!-- Test Results Summary -->
+          <div class="submission-section">
+            <h3 class="submission-section-title">
+              <i class="bi bi-check2-square me-1" aria-hidden="true"></i> Test Results
+            </h3>
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <span class="fw-bold" style="font-size: 1.1rem;"
+                    [class.score-all-passed]="score.passed === score.total"
+                    [class.score-partial]="score.passed > 0 && score.passed < score.total"
+                    [class.score-none-passed]="score.passed === 0 && score.total > 0">
+                {{ score.passed }}/{{ score.total }} passed
+              </span>
+            </div>
+            <div class="progress mb-3" style="height: 8px;" role="progressbar"
+                 [attr.aria-valuenow]="score.total > 0 ? Math.round((score.passed / score.total) * 100) : 0"
+                 aria-valuemin="0" aria-valuemax="100"
+                 [attr.aria-label]="score.passed + ' of ' + score.total + ' tests passed'">
+              <div class="progress-bar bg-success" [style.width.%]="score.total > 0 ? (score.passed / score.total) * 100 : 0"></div>
+              <div class="progress-bar" style="background: #78909c;" [style.width.%]="score.total > 0 ? (score.failed / score.total) * 100 : 0"></div>
+            </div>
+
+            <!-- Difficulty Breakdown -->
+            @if (score.difficultyBreakdown && score.difficultyBreakdown.length > 0) {
+              <div class="breakdown-table">
+                @for (b of score.difficultyBreakdown; track b.difficulty) {
+                  <div class="breakdown-row d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="difficulty-badge"
+                            [class.difficulty-easy]="b.difficulty === 'easy'"
+                            [class.difficulty-medium]="b.difficulty === 'medium'"
+                            [class.difficulty-hard]="b.difficulty === 'hard'">
+                        {{ b.difficulty }}
+                      </span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                      <span [class.score-all-passed]="b.passed === b.total"
+                            [class.score-partial]="b.passed > 0 && b.passed < b.total"
+                            [class.score-none-passed]="b.passed === 0 && b.total > 0"
+                            class="fw-bold" style="font-size: 13px;">
+                        {{ b.passed }}/{{ b.total }}
+                      </span>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- AI Code Review Section -->
+          <div class="submission-section">
+            <h3 class="submission-section-title">
+              <i class="bi bi-robot me-1" aria-hidden="true"></i> AI Code Review
+            </h3>
+            @if (assessment.isEvaluatingLlm()) {
+              <div class="d-flex align-items-center gap-2 text-primary" role="status">
+                <span class="spinner-border spinner-border-sm" style="width: 14px; height: 14px;" aria-hidden="true"></span>
+                Analyzing your code...
+              </div>
+            } @else if (score.llmEvaluation) {
+              <div class="d-flex gap-3 flex-wrap mb-2">
+                <div class="quality-metric">
+                  <div class="quality-value"
+                       [class.text-success]="score.llmEvaluation.codeQuality.maintainability >= 7"
+                       [class.text-warning]="score.llmEvaluation.codeQuality.maintainability >= 4 && score.llmEvaluation.codeQuality.maintainability < 7"
+                       [class.text-danger]="score.llmEvaluation.codeQuality.maintainability < 4">
+                    {{ score.llmEvaluation.codeQuality.maintainability }}/10
+                  </div>
+                  <small class="text-muted">Maintainability</small>
+                </div>
+                <div class="quality-metric">
+                  <div class="quality-value"
+                       [class.text-success]="score.llmEvaluation.codeQuality.reliability >= 7"
+                       [class.text-warning]="score.llmEvaluation.codeQuality.reliability >= 4 && score.llmEvaluation.codeQuality.reliability < 7"
+                       [class.text-danger]="score.llmEvaluation.codeQuality.reliability < 4">
+                    {{ score.llmEvaluation.codeQuality.reliability }}/10
+                  </div>
+                  <small class="text-muted">Reliability</small>
+                </div>
+                <div class="quality-metric">
+                  <div class="quality-value"
+                       [class.text-success]="score.llmEvaluation.codeQuality.cyclomaticComplexity === 'low'"
+                       [class.text-warning]="score.llmEvaluation.codeQuality.cyclomaticComplexity === 'moderate'"
+                       [class.text-danger]="score.llmEvaluation.codeQuality.cyclomaticComplexity === 'high'">
+                    {{ score.llmEvaluation.codeQuality.cyclomaticComplexity }}
+                  </div>
+                  <small class="text-muted">Complexity</small>
+                </div>
+              </div>
+              <p class="text-muted mb-0" style="font-size: 13px;">{{ score.llmEvaluation.reasoning }}</p>
+            } @else {
+              <small class="text-muted">No API key configured for AI code review.</small>
+            }
+          </div>
+
+          <div class="text-center pt-2">
+            <button class="btn btn-primary px-4" (click)="backToProblems()">
+              <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Back to Problems
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<!-- Main Workspace -->
+@if (assessment.currentProblem() && !assessment.isSubmitted()) {
+  <div class="workspace-layout vh-100 d-flex flex-column">
+    <!-- Top: Header with title, status, timer, theme, preview toggle, action buttons -->
+    <app-workspace-header
+      [isDarkTheme]="isDarkTheme()"
+      [showPreview]="showPreview()"
+      (themeToggle)="toggleTheme()"
+      (previewToggle)="togglePreview()"
+      (runTests)="onRunTests()"
+      (resetCode)="onReset()"
+      (submit)="onSubmit()" />
+
+    <!-- 3-column layout -->
+    <div class="main-row flex-grow-1 d-flex overflow-hidden" role="main">
+      <!-- LEFT: Problem + File Tree sidebar -->
+      <div class="sidebar d-flex flex-column" [style.width.px]="sidebarWidth()">
+        <div class="sidebar-tabs d-flex" role="tablist" aria-label="Sidebar views">
+          <button class="sidebar-tab" [class.active]="sidebarTab() === 'problem'"
+                  (click)="sidebarTab.set('problem')"
+                  role="tab" [attr.aria-selected]="sidebarTab() === 'problem'"
+                  aria-controls="sidebar-panel-problem" id="sidebar-tab-problem">
+            <i class="bi bi-book me-1" aria-hidden="true"></i> Problem
+          </button>
+          <button class="sidebar-tab" [class.active]="sidebarTab() === 'files'"
+                  (click)="sidebarTab.set('files')"
+                  role="tab" [attr.aria-selected]="sidebarTab() === 'files'"
+                  aria-controls="sidebar-panel-files" id="sidebar-tab-files">
+            <i class="bi bi-folder2-open me-1" aria-hidden="true"></i> Files
+          </button>
+        </div>
+        <div class="sidebar-content flex-grow-1 overflow-hidden">
+          @if (sidebarTab() === 'problem') {
+            <div role="tabpanel" id="sidebar-panel-problem" aria-labelledby="sidebar-tab-problem" class="h-100">
+              <app-problem-panel />
+            </div>
+          } @else {
+            <div role="tabpanel" id="sidebar-panel-files" aria-labelledby="sidebar-tab-files" class="h-100">
+              <app-file-tree />
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Sidebar resize handle -->
+      <div class="resize-handle-v"
+           (mousedown)="startSidebarDrag($event)"
+           (keydown)="onResizeKeydown($event, 'sidebar')"
+           role="separator" aria-orientation="vertical"
+           [attr.aria-valuenow]="sidebarWidth()"
+           aria-valuemin="180" aria-valuemax="600"
+           aria-label="Resize sidebar"
+           tabindex="0"></div>
+
+      <!-- CENTER: File tabs + Editor + Bottom panel -->
+      <div class="editor-area flex-grow-1 d-flex flex-column overflow-hidden">
+        <!-- File tabs (moved from header) -->
+        <app-tab-bar
+          [files]="fileSystem.openFiles()"
+          [activeFilePath]="fileSystem.activeFilePath()"
+          (tabClick)="fileSystem.openFile($event)"
+          (tabClose)="fileSystem.closeTab($event)" />
+
+        <!-- Code editor -->
+        <app-code-editor [theme]="isDarkTheme() ? 'vs-dark' : 'vs'" />
+
+        <!-- Drag overlay prevents Monaco/iframes from stealing mouse events -->
+        @if (dragging) {
+          <div class="drag-overlay"></div>
+        }
+
+        <!-- Bottom panel resize handle -->
+        <div class="resize-handle-h"
+             (mousedown)="startBottomDrag($event)"
+             (keydown)="onResizeKeydown($event, 'bottom')"
+             role="separator" aria-orientation="horizontal"
+             [attr.aria-valuenow]="bottomPanelHeight()"
+             aria-valuemin="36" aria-valuemax="500"
+             aria-label="Resize bottom panel"
+             tabindex="0"></div>
+
+        <!-- Bottom: Console / Tests / Errors -->
+        <div class="bottom-panel d-flex flex-column" [style.height.px]="bottomPanelHeight()">
+          <div class="bottom-tabs d-flex align-items-center" role="tablist" aria-label="Output panels">
+            <button class="bottom-tab" [class.active]="bottomTab() === 'console'"
+                    (click)="bottomTab.set('console')"
+                    role="tab" [attr.aria-selected]="bottomTab() === 'console'"
+                    aria-controls="bottom-panel-console" id="bottom-tab-console">
+              <i class="bi bi-terminal me-1" aria-hidden="true"></i> Console
+              @if (appConsole.count() > 0) {
+                <span class="badge bg-secondary ms-1" style="font-size: 9px;">{{ appConsole.count() }}</span>
+              }
+              @if (appConsole.errorCount() > 0) {
+                <span class="badge bg-danger ms-1" style="font-size: 9px;">{{ appConsole.errorCount() }}</span>
+              }
+            </button>
+            <button class="bottom-tab" [class.active]="bottomTab() === 'tests'"
+                    (click)="bottomTab.set('tests')"
+                    role="tab" [attr.aria-selected]="bottomTab() === 'tests'"
+                    aria-controls="bottom-panel-tests" id="bottom-tab-tests">
+              <i class="bi bi-check2-square me-1" aria-hidden="true"></i> Tests
+            </button>
+            <button class="bottom-tab" [class.active]="bottomTab() === 'errors'"
+                    (click)="bottomTab.set('errors')"
+                    role="tab" [attr.aria-selected]="bottomTab() === 'errors'"
+                    aria-controls="bottom-panel-errors" id="bottom-tab-errors">
+              <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i> Problems
+              @if (compilation.hasErrors()) {
+                <span class="badge bg-danger ms-1" style="font-size: 9px;">{{ compilation.errors().length }}</span>
+              }
+            </button>
+
+            <!-- Right side: collapse/expand -->
+            <div class="ms-auto d-flex align-items-center gap-1 pe-2">
+              <button class="bottom-tab-btn" (click)="toggleBottomPanel()"
+                      [attr.aria-label]="bottomPanelHeight() > 50 ? 'Collapse bottom panel' : 'Expand bottom panel'">
+                <i [class]="bottomPanelHeight() > 50 ? 'bi bi-chevron-down' : 'bi bi-chevron-up'" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+          <div class="bottom-content flex-grow-1 overflow-hidden">
+            @switch (bottomTab()) {
+              @case ('console') {
+                <div role="tabpanel" id="bottom-panel-console" aria-labelledby="bottom-tab-console">
+                  <app-app-console />
+                </div>
+              }
+              @case ('tests') {
+                <div role="tabpanel" id="bottom-panel-tests" aria-labelledby="bottom-tab-tests">
+                  <app-test-results-panel />
+                </div>
+              }
+              @case ('errors') {
+                <div role="tabpanel" id="bottom-panel-errors" aria-labelledby="bottom-tab-errors">
+                  <div class="errors-panel p-2" role="log" aria-live="polite" aria-label="Compilation errors">
+                    @if (compilation.errors().length === 0) {
+                      <div class="text-center text-muted py-3">
+                        <i class="bi bi-check-circle" style="font-size: 2rem;" aria-hidden="true"></i>
+                        <p class="mt-2 mb-0">No problems detected</p>
+                      </div>
+                    } @else {
+                      @for (error of compilation.errors(); track $index) {
+                        <div class="error-row d-flex align-items-start p-2 mb-1">
+                          <i class="bi bi-x-circle-fill text-danger me-2 mt-1" aria-hidden="true"></i>
+                          <div>
+                            <code class="text-warning"
+                                  [attr.aria-label]="'File ' + error.file + ', line ' + error.line + ', column ' + error.column">
+                              {{ error.file }}:{{ error.line }}:{{ error.column }}
+                            </code>
+                            <span class="ms-2 text-light">{{ error.message }}</span>
+                          </div>
+                        </div>
+                      }
+                    }
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Preview panel (conditionally rendered) -->
+      @if (showPreview()) {
+        <div class="resize-handle-v"
+             (mousedown)="startPreviewDrag($event)"
+             (keydown)="onResizeKeydown($event, 'preview')"
+             role="separator" aria-orientation="vertical"
+             [attr.aria-valuenow]="previewWidth()"
+             aria-valuemin="200" aria-valuemax="800"
+             aria-label="Resize preview panel"
+             tabindex="0"></div>
+        <div class="preview-area d-flex flex-column" [style.width.px]="previewWidth()">
+          <app-preview-panel />
+        </div>
+      }
+    </div>
+  </div>
+}

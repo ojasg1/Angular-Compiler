@@ -1,0 +1,136 @@
+/* ============================================
+   Theme System — CSS Custom Properties
+   ============================================ */
+
+/* Dark theme (default) */
+body.theme-dark {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252526;
+  --bg-tertiary: #2d2d2d;
+  --bg-hover: #2a2d2e;
+  --bg-active: #37373d;
+  --bg-input: #3c3c3c;
+
+  --text-primary: #d4d4d4;
+  --text-secondary: #cccccc;
+  --text-tertiary: #bbbbbb;
+  --text-muted: #888888;
+  --text-bright: #ffffff;
+
+  --border-color: #333333;
+  --border-subtle: #2a2a2a;
+
+  --accent-color: #007acc;
+  --accent-hover: #1a8ad4;
+
+  --scrollbar-track: #1e1e1e;
+  --scrollbar-thumb: #424242;
+  --scrollbar-thumb-hover: #555555;
+
+  --code-bg: #333333;
+  --code-color: #ce9178;
+
+  --overlay-bg: rgba(0, 0, 0, 0.7);
+  --card-bg: #2d2d2d;
+  --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+  --badge-bg: #333333;
+
+  /* Log colors */
+  --log-text: #d4d4d4;
+  --log-info: #75beff;
+  --log-warn: #cca700;
+  --log-error: #f48771;
+  --log-debug: #888888;
+  --log-info-bg: #1a3a5c;
+  --log-warn-bg: #5c4a00;
+  --log-error-bg: #5c1a1a;
+  --log-debug-bg: #2d2d2d;
+
+  color-scheme: dark;
+}
+
+/* Light theme */
+body.theme-light {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f3f3f3;
+  --bg-tertiary: #e8e8e8;
+  --bg-hover: #e9ecef;
+  --bg-active: #d0d0d0;
+  --bg-input: #ffffff;
+
+  --text-primary: #1e1e1e;
+  --text-secondary: #333333;
+  --text-tertiary: #555555;
+  --text-muted: #6c757d;
+  --text-bright: #000000;
+
+  --border-color: #d4d4d4;
+  --border-subtle: #e8e8e8;
+
+  --accent-color: #007acc;
+  --accent-hover: #005a9e;
+
+  --scrollbar-track: #f3f3f3;
+  --scrollbar-thumb: #c1c1c1;
+  --scrollbar-thumb-hover: #a0a0a0;
+
+  --code-bg: #e8e8e8;
+  --code-color: #a31515;
+
+  --overlay-bg: rgba(0, 0, 0, 0.5);
+  --card-bg: #ffffff;
+  --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+
+  --badge-bg: #e0e0e0;
+
+  /* Log colors */
+  --log-text: #1e1e1e;
+  --log-info: #0451a5;
+  --log-warn: #795e26;
+  --log-error: #cd3131;
+  --log-debug: #6c757d;
+  --log-info-bg: #dbeafe;
+  --log-warn-bg: #fef3cd;
+  --log-error-bg: #f8d7da;
+  --log-debug-bg: #e8e8e8;
+
+  color-scheme: light;
+}
+
+/* ============================================
+   Global styles
+   ============================================ */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Override Bootstrap for dark panels */
+.bg-dark-subtle {
+  background-color: var(--bg-secondary) !important;
+}

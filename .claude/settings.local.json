@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "WebSearch",
+      "WebFetch(domain:webcontainers.io)",
+      "Bash(node --version:*)",
+      "Bash(npm --version:*)",
+      "Bash(npx @angular/cli:*)",
+      "Bash(ng version:*)",
+      "Bash(npm install:*)",
+      "Bash(npx ng build:*)",
+      "Bash(npx ng serve:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(netstat:*)",
+      "Bash(node:*)",
+      "Bash(cd D:\\\\harsh\\\\Code_Playground\\\\Hackathon\\\\iMocha:*)"
+    ]
+  }
+}
