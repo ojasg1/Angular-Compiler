@@ -180,6 +180,4 @@ npm run test           # Vitest
 npm run build:snapshot # Pre-build WebContainer dependency snapshot
 ```
 
-## License
 
-Proprietary — iMocha Assessment Platform.
